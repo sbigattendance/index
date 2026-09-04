@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SBI General Attendance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <style>
+    :root {
+      --primary: #3a1a5b; --secondary: #e40046; --bg-color: #f4f6f9;
+      --card-bg: #ffffff; --text-main: #2d3748; --text-light: #718096;
+      --success: #38a169; --danger: #e53e3e; --warning: #dd6b20;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body, html { font-family: 'Inter', sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; color: var(--text-main); -webkit-tap-highlight-color: transparent; }
+    
+    .app-wrapper { display: flex; justify-content: center; min-height: 100vh; width: 100%; }
+    .app-container { width: 100%; background: var(--bg-color); position: relative; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    @media (min-width: 768px) {
+      .app-wrapper { padding: 40px 20px; align-items: flex-start; }
+      .app-container { max-width: 800px; min-height: auto; border-radius: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.08); overflow: hidden; }
+    }
+
+    .navbar { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); padding: 20px; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; }
+    .navbar h1 { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; text-align: center;}
+    
+    .screen { display: none; padding: 20px; animation: fadeIn 0.3s ease; flex-grow: 1; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card { background: var(--card-bg); border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
+    .profile-module { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 24px; display: flex; align-items: center; gap: 16px; border: 1px solid #edf2f7; }
+    .profile-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; flex-shrink: 0; box-shadow: 0 4px 10px rgba(228, 0, 70, 0.2); }
+    .profile-details { display: flex; flex-direction: column; gap: 4px; }
+    .greeting { font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--primary); }
+    .sub-greeting { color: var(--text-light); font-size: 0.85rem; margin: 0; font-weight: 600; line-height: 1.4;}
+
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85rem; color: var(--text-light); margin-bottom: 6px; font-weight: 600; }
+    .input-group input, .input-group select { width: 100%; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 1rem; transition: 0.2s; background: #fff; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--secondary); outline: none; }
+
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px;}
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; box-shadow: 0 4px 15px rgba(228, 0, 70, 0.2); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-secondary { background: #e2e8f0; color: var(--text-main); margin-top: 10px; }
+    .btn-small { padding: 8px; font-size: 0.8rem; border-radius: 6px; }
+    
+    .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; }
+    .status-active { background: #c6f6d5; color: #22543d; }
+    .status-inactive { background: #fed7d7; color: #822727; }
+    .status-complete { background: #bee3f8; color: #2a4365; }
+    .status-warning { background: #feebc8; color: #9c4221; }
+
+    .timer-container { text-align: center; margin: 15px 0; padding: 10px; background: #fff5f7; border: 1px solid #fed7d7; border-radius: 12px; }
+    .timer-text { font-size: 1.8rem; font-weight: 700; color: var(--secondary); font-variant-numeric: tabular-nums; }
+    .timer-label { font-size: 0.75rem; color: var(--danger); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    .time-display { display: flex; justify-content: space-between; background: #f8fafc; padding: 12px; border-radius: 10px; margin-top: 15px; font-size: 0.85rem; border: 1px solid #edf2f7; }
+    .time-block { display: flex; flex-direction: column; gap: 4px; }
+    .time-label { color: var(--text-light); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+    .time-value { color: var(--text-main); font-weight: 700; }
+
+    .stats-header { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; margin-top: 10px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .stat-card { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+    .stat-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;}
+    .stat-numbers { font-size: 0.85rem; color: var(--text-light); display: flex; justify-content: space-between; font-weight: 600;}
+    .progress-bar { width: 100%; height: 8px; background: #edf2f7; border-radius: 4px; margin-top: 12px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 4px; width: 0%; transition: width 1s ease; }
+
+    .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #edf2f7; padding-bottom: 10px; overflow-x: auto; }
+    .tab-btn { background: none; border: none; font-size: 0.9rem; font-weight: 600; color: var(--text-light); padding: 8px 12px; cursor: pointer; white-space: nowrap; }
+    .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); margin-bottom: -12px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+    .master-meeting-list { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+    .meeting-row-card { background: #f8fafc; border: 1px solid #edf2f7; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
+    .meeting-row-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.95rem; color: var(--primary);}
+    .meeting-row-actions { display: flex; gap: 10px; }
+
+    .report-meeting-card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #edf2f7; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .report-meeting-header { border-bottom: 1px solid #edf2f7; padding-bottom: 10px; margin-bottom: 10px; font-weight: 700; color: var(--primary); display: flex; justify-content: space-between;}
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .data-table th, .data-table td { padding: 10px; text-align: left; border-bottom: 1px solid #edf2f7; }
+    .data-table th { background: #f8fafc; font-weight: 700; color: var(--text-light); }
+    .mgr-row { cursor: pointer; transition: 0.2s; }
+    .mgr-row:hover { background: #f8fafc; }
+    .drilldown-row { display: none; background: #fafafa; }
+    .drilldown-row.active { display: table-row; }
+    .inner-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 5px 0; border: 1px dashed #cbd5e0; }
+    .inner-table th { background: #edf2f7; padding: 6px; }
+    .inner-table td { padding: 6px; border-bottom: 1px dashed #edf2f7; }
+
+    .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+    .btn.loading .spinner { display: block; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .error-text { color: var(--danger); font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; display: none; }
+
+    #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s, bottom 0.3s; font-weight: 600;}
+    #toast.show { visibility: visible; bottom: 50px; opacity: 1; }
+    #toast.success { background-color: var(--success); }
+    #toast.error { background-color: var(--danger); }
+  </style>
+</head>
+<body>
+
+<div id="toast">Message here</div>
+
+<div class="app-wrapper">
+  <div class="app-container">
+    <div class="navbar"><h1>SBI General Portal</h1></div>
+
+    <!-- Agent Login -->
+    <div id="loginScreen" class="screen">
+      <div class="card" style="margin-top: 20px;">
+        <h2 style="margin-top:0; color: var(--primary);">Agent Access</h2>
+        <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 24px;">Enter your IMD code to mark attendance.</p>
+        <div class="input-group">
+          <label>IMD Code</label>
+          <input type="text" id="loginIMD" placeholder="e.g. IMD12345">
+        </div>
+        <button class="btn btn-primary" onclick="loginAgent()" id="loginBtn">
+           <span>Log In</span><div class="spinner"></div>
+        </button>
+        <div id="loginError" class="error-text">Enter correct Code to Mark Attendance</div>
+      </div>
+      <a style="display:block; text-align:center; font-size:0.8rem; text-decoration:underline; cursor:pointer; color: var(--text-light); margin-top: 30px;" onclick="navTo('adminPinScreen')">Admin Portal</a>
+    </div>
+
+    <!-- Agent Dashboard -->
+    <div id="dashboardScreen" class="screen">
+      <div class="profile-module">
+        <div class="profile-avatar" id="profileAvatar">A</div>
+        <div class="profile-details">
+          <h2 class="greeting" id="greetText">Welcome!</h2>
+          <div class="sub-greeting"><span id="subGreetName">Loading...</span><br><span id="subGreetIMD">IMD: --</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 10px;">
+         <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">Today's Sessions</h3>
+         <button style="background:#edf2f7; border:none; color:var(--primary); padding:6px 12px; border-radius:8px; font-weight:600; cursor:pointer; font-size: 0.8rem;" onclick="loadAgentDashboard()">↻ Refresh</button>
+      </div>
+      
+      <!-- Multi-Meeting Container -->
+      <div id="agentMeetingsContainer">
+         <div class="card"><div class="status-badge status-inactive">Checking Meetings...</div></div>
+      </div>
+
+      <div class="stats-header">
+        Completed Attendances
+        <input type="month" id="monthPicker" style="padding: 6px; border: 1px solid #edf2f7; border-radius: 6px; font-family: inherit; font-size: 0.85rem;" onchange="loadAgentDashboard()">
+      </div>
+      
+      <div id="statsContainer" class="stats-grid"></div>
+
+      <button class="btn btn-secondary" id="logoutBtn" onclick="logout()" style="margin-top: 24px;">
+         <span>Log Out</span><div class="spinner"></div>
+      </button>
+    </div>
+
+    <!-- Admin PIN -->
+    <div id="adminPinScreen" class="screen">
+      <div class="card" style="margin-top: 20px;">
+        <h2 style="margin-top:0; color: var(--primary);">Admin Login</h2>
+        <div class="input-group"><label>Security PIN</label><input type="password" id="adminPinInput" placeholder="****"></div>
+        <button class="btn btn-primary" onclick="verifyAdminPin()" id="pinBtn">
+            <span>Validate</span><div class="spinner"></div>
+        </button>
+        <button class="btn btn-secondary" onclick="autoRoute()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboardScreen" class="screen">
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="switchAdminTab('controls', this); fetchAdminMeetings();">Controls</button>
+        <button class="tab-btn" onclick="switchAdminTab('live', this); fetchLiveReport();">Live Report</button>
+        <button class="tab-btn" onclick="switchAdminTab('history', this)">History</button>
+      </div>
+
+      <!-- Admin Tab: Controls -->
+      <div id="tab-controls" class="tab-content active">
+        <div class="card">
+            <h3 style="margin-top:0; color: var(--primary);">Open New Meeting</h3>
+            <div class="input-group">
+            <select id="meetingTypeSelect">
+                <option>Branch Meeting</option>
+                <option>Unit Meeting</option>
+                <option>Training</option>
+            </select>
+            </div>
+            <button class="btn btn-primary" id="btnOpen" onclick="adminAction('Open', null, null, this)">
+                <span>Start 15-Min Session</span><div class="spinner"></div>
+            </button>
+        </div>
+
+        <h3 style="margin-top:20px; color: var(--primary); font-size: 1.1rem;">Master List (Today)</h3>
+        <div id="adminMasterList" class="master-meeting-list">
+            Loading meetings...
+        </div>
+      </div>
+
+      <!-- Admin Tab: Live Report -->
+      <div id="tab-live" class="tab-content">
+        <div id="liveReportContainer">Loading live reports...</div>
+      </div>
+
+      <!-- Admin Tab: History -->
+      <div id="tab-history" class="tab-content">
+        <div class="card">
+            <h3 style="margin-top:0; color: var(--primary);">Search Past Reports</h3>
+            <div class="input-group">
+                <label>Select Date</label>
+                <input type="date" id="historyDate">
+            </div>
+            <button class="btn btn-primary" onclick="fetchHistoryReport()">Fetch Report</button>
+        </div>
+        <div id="historyReportContainer" style="margin-top: 15px;"></div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="autoRoute()" style="margin-top: 20px;">Exit Admin</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // BRAND NEW APPS SCRIPT URL HERE
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxKwF13TVYU5BcA4sHdOJMWe8Mf9L_Jpn-ltc6FPQjKS2_ntkiCA1o_wQktk4Al_gb2/exec';
+  // ==========================================
+
+  let agentCountdownIntervals = [];
+
+  window.onload = () => {
+    const now = new Date();
+    let m = (now.getMonth() + 1).toString().padStart(2, '0');
+    document.getElementById('monthPicker').value = `${now.getFullYear()}-${m}`;
+    document.getElementById('historyDate').value = `${now.getFullYear()}-${m}-${now.getDate().toString().padStart(2,'0')}`;
+    autoRoute();
+  };
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById("toast");
+    toast.innerText = msg; toast.className = `show ${type}`;
+    setTimeout(() => { toast.className = toast.className.replace(`show ${type}`, ""); }, 4000);
+  }
+
+  function format12Hour(isoString) {
+      if(!isoString) return "--:--";
+      return new Date(isoString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  async function callBackend(action, payload, callback) {
+    try {
+      const response = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action, payload }) });
+      const data = await response.json();
+      callback(data);
+    } catch (error) { 
+      showToast("Network Error.", "error"); 
+    }
+  }
+
+  function navTo(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  function autoRoute() {
+    if(localStorage.getItem('agentIMD')) {
+      navTo('dashboardScreen');
+      setupProfile(); loadAgentDashboard();
+    } else {
+      navTo('loginScreen');
+    }
+  }
+
+  function setupProfile() {
+    const name = localStorage.getItem('agentName');
+    const hr = new Date().getHours();
+    let greet = hr < 12 ? 'Good Morning' : (hr < 17 ? 'Good Afternoon' : 'Good Evening');
+    
+    document.getElementById('greetText').innerText = greet;
+    document.getElementById('profileAvatar').innerText = name ? name.charAt(0).toUpperCase() : 'A';
+    document.getElementById('subGreetName').innerText = name;
+    document.getElementById('subGreetIMD').innerText = `IMD: ${localStorage.getItem('agentIMD')} | ${localStorage.getItem('agentCluster') || ''}`;
+  }
+
+  function logout() { 
+    const btn = document.getElementById('logoutBtn');
+    btn.classList.add('loading');
+    setTimeout(() => { localStorage.clear(); btn.classList.remove('loading'); autoRoute(); }, 800);
+  }
+
+  function loginAgent() {
+    const imd = document.getElementById('loginIMD').value.trim();
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('loginError');
+    err.style.display = 'none';
+
+    if(!imd) { err.style.display = 'block'; return; }
+    
+    btn.classList.add('loading'); btn.disabled = true;
+    
+    callBackend('validateAgent', {imd}, (agent) => {
+      btn.classList.remove('loading'); btn.disabled = false;
+      if(agent && !agent.error) {
+        localStorage.setItem('agentIMD', agent.imd);
+        localStorage.setItem('agentName', agent.name);
+        localStorage.setItem('agentCluster', agent.cluster);
+        autoRoute();
+      } else { 
+        err.style.display = 'block'; 
+      }
+    });
+  }
+
+  // --- AGENT DASHBOARD LOGIC ---
+  function loadAgentDashboard() {
+    agentCountdownIntervals.forEach(clearInterval); 
+    agentCountdownIntervals = [];
+    document.getElementById('agentMeetingsContainer').innerHTML = '<div class="card"><div class="status-badge status-inactive">Checking Meetings...</div></div>';
+    
+    const month = document.getElementById('monthPicker').value;
+    callBackend('getAgentDashboard', {imd: localStorage.getItem('agentIMD'), month: month}, (data) => {
+      if(data.error) { showToast(data.message || "System error", "error"); return; }
+      renderAgentMeetings(data.todayMeetings, data.todayAttendances);
+      renderStats(data.stats);
+    });
+  }
+
+  function renderAgentMeetings(meetings, attendances) {
+      const container = document.getElementById('agentMeetingsContainer');
+      container.innerHTML = '';
+
+      if (!meetings || meetings.length === 0) {
+          container.innerHTML = '<div class="card" style="text-align:center; padding: 30px;"><div class="status-badge status-inactive" style="margin:0;">No Meetings Scheduled Today</div></div>';
+          return;
+      }
+
+      meetings.forEach((m, index) => {
+          let att = attendances[m.id]; 
+          let cardHtml = `<div class="card">`;
+          
+          if (m.status === 'Open' && !att) {
+              cardHtml += `
+                <div class="status-badge status-active">Session Open</div>
+                <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: var(--primary);">${m.type}</h3>
+                <div class="timer-container" style="display:block;">
+                   <div class="timer-label">Time to Check-In</div>
+                   <div class="timer-text" id="timer_${index}">15:00</div>
+                </div>
+                <button class="btn btn-primary" style="margin-top:15px;" onclick="agentAction('markCheckIn', '${m.id}', this)"><span>Check In</span><div class="spinner"></div></button>
+              `;
+              startAgentTimer(index, m.expiryTime);
+          } 
+          else if (att && !att.checkOut) {
+              let badgeState = m.status === 'Open' ? 'status-warning' : 'status-danger';
+              let badgeLabel = m.status === 'Open' ? 'Checked In' : 'Meeting Closed - Pending Check-Out';
+              cardHtml += `
+                <div class="status-badge ${badgeState}">${badgeLabel}</div>
+                <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: var(--primary);">${m.type}</h3>
+                <div class="time-display" style="display:flex;">
+                   <div class="time-block"><span class="time-label">Check-In</span><span class="time-value">${format12Hour(att.checkIn)}</span></div>
+                </div>
+                <button class="btn btn-danger" style="margin-top:15px;" onclick="agentAction('markCheckOut', '${m.id}', this)"><span>Complete Check Out</span><div class="spinner"></div></button>
+              `;
+          }
+          else if (att && att.checkOut) {
+              cardHtml += `
+                <div class="status-badge status-complete">Full Attendance Marked</div>
+                <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: var(--primary);">${m.type}</h3>
+                <div class="time-display" style="display:flex;">
+                   <div class="time-block"><span class="time-label">Check-In</span><span class="time-value">${format12Hour(att.checkIn)}</span></div>
+                   <div class="time-block" style="text-align: right;"><span class="time-label">Check-Out</span><span class="time-value">${format12Hour(att.checkOut)}</span></div>
+                </div>
+              `;
+          } 
+          else {
+              cardHtml += `
+                <div class="status-badge status-inactive">Session Closed</div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary);">${m.type}</h3>
+              `;
+          }
+          
+          cardHtml += `</div>`;
+          container.innerHTML += cardHtml;
+      });
+  }
+
+  function startAgentTimer(elementIdSuffix, expiryTimestamp) {
+      let interval = setInterval(() => {
+          let el = document.getElementById(`timer_${elementIdSuffix}`);
+          if(!el) return;
+          let distance = expiryTimestamp - new Date().getTime();
+          if (distance <= 0) {
+              clearInterval(interval);
+              el.innerText = "00:00"; 
+              loadAgentDashboard(); 
+          } else {
+              let min = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+              let sec = Math.floor((distance % (1000 * 60)) / 1000);
+              el.innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+          }
+      }, 1000);
+      agentCountdownIntervals.push(interval);
+  }
+
+  function agentAction(endpoint, meetingId, btn) {
+    btn.classList.add('loading'); btn.disabled = true;
+    callBackend(endpoint, { imd: localStorage.getItem('agentIMD'), meetingId: meetingId }, (res) => {
+        if(res.status === 'success') showToast(res.message);
+        else showToast(res.message, "error");
+        loadAgentDashboard();
+    });
+  }
+
+  function renderStats(stats) {
+    if(!stats) return;
+    const container = document.getElementById('statsContainer');
+    container.innerHTML = ''; 
+    for(const [type, data] of Object.entries(stats)) {
+      const percent = data.scheduled > 0 ? Math.round((data.attended / data.scheduled) * 100) : 0;
+      container.innerHTML += `
+        <div class="stat-card">
+          <div class="stat-title">${type}</div>
+          <div class="stat-numbers"><span>Fully Attended: <strong style="color:var(--primary)">${data.attended} / ${data.scheduled}</strong></span><span style="color:var(--secondary)"><strong>${percent}%</strong></span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
+        </div>`;
+    }
+  }
+
+  // --- ADMIN LOGIC ---
+  function verifyAdminPin() {
+    const pin = document.getElementById('adminPinInput').value;
+    const btn = document.getElementById('pinBtn');
+    if(!pin) return;
+    btn.classList.add('loading'); btn.disabled = true;
+    callBackend('verifyAdmin', {pin: pin}, (isValid) => {
+      btn.classList.remove('loading'); btn.disabled = false;
+      if(isValid) { document.getElementById('adminPinInput').value = ''; navTo('adminDashboardScreen'); fetchAdminMeetings(); } 
+      else { showToast("Invalid PIN", "error"); }
+    });
+  }
+
+  function switchAdminTab(tabId, btnElement) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btnElement.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+  }
+
+  function renderAdminMeetings(meetings) {
+      let html = '';
+      if(!meetings || meetings.length === 0) { 
+          html = '<div class="meeting-row-card">No meetings opened today.</div>'; 
+      } else {
+          meetings.forEach(m => {
+              let statusColor = m.status === 'Open' ? 'var(--success)' : 'var(--danger)';
+              html += `
+                <div class="meeting-row-card">
+                   <div class="meeting-row-header">
+                      <span>${m.type}</span>
+                      <span style="color:${statusColor}; font-size:0.8rem;">${m.status}</span>
+                   </div>
+                   <div style="font-size: 0.8rem; color: var(--text-light);">Opened: ${format12Hour(m.startTime)}</div>
+                   <div class="meeting-row-actions">
+                      ${m.status === 'Open' 
+                        ? `<button class="btn btn-danger btn-small" onclick="adminAction('Force-Close', null, '${m.id}', this)"><span>Force Close</span><div class="spinner"></div></button>`
+                        : `<button class="btn btn-warning btn-small" onclick="adminAction('Re-Open', null, '${m.id}', this)"><span>Re-Open (15m)</span><div class="spinner"></div></button>`
+                      }
+                   </div>
+                </div>`;
+          });
+      }
+      document.getElementById('adminMasterList').innerHTML = html;
+  }
+
+  function fetchAdminMeetings() {
+      document.getElementById('adminMasterList').innerHTML = 'Loading...';
+      callBackend('getAdminDashboard', {}, (meetings) => {
+          renderAdminMeetings(meetings);
+      });
+  }
+
+  function adminAction(actionType, typeStr, meetingId, btnElem) {
+    let payload = { actionType: actionType };
+    if(typeStr) payload.type = typeStr;
+    if(meetingId) payload.meetingId = meetingId;
+    if(actionType === 'Open') payload.type = document.getElementById('meetingTypeSelect').value;
+
+    if (btnElem) {
+        btnElem.classList.add('loading');
+        btnElem.disabled = true;
+    }
+
+    callBackend('adminMeetingAction', payload, (res) => {
+        showToast(res.message, res.success ? 'success' : 'error');
+        if(btnElem) {
+            btnElem.classList.remove('loading');
+            btnElem.disabled = false;
+        }
+        if (res.meetings) {
+            renderAdminMeetings(res.meetings);
+        } else {
+            fetchAdminMeetings();
+        }
+    });
+  }
+
+  function buildMultiMeetingReports(meetingsData, containerId) {
+      const container = document.getElementById(containerId);
+      if(!meetingsData || meetingsData.length === 0) {
+          container.innerHTML = '<div class="card">No meeting data available for this date.</div>'; return;
+      }
+      
+      let html = '';
+      meetingsData.forEach((m, mIdx) => {
+          let pct = m.totalBase > 0 ? Math.round((m.totalAttended/m.totalBase)*100) : 0;
+          
+          let card = `
+            <div class="report-meeting-card">
+              <div class="report-meeting-header">
+                 <span>${m.type} (${format12Hour(m.startTime)})</span>
+                 <span>${m.totalAttended}/${m.totalBase} (${pct}%)</span>
+              </div>
+              <div style="overflow-x:auto;">
+                 <table class="data-table">
+                   <thead><tr><th>Manager</th><th>Attended</th><th>Base</th><th>%</th></tr></thead>
+                   <tbody>
+          `;
+          
+          if(m.managers && m.managers.length > 0) {
+              m.managers.forEach((mgr, idx) => {
+                  let mPct = mgr.base > 0 ? Math.round((mgr.attended/mgr.base)*100) : 0;
+                  let drillId = `${containerId}_m${mIdx}_d${idx}`;
+                  
+                  card += `<tr class="mgr-row" onclick="toggleDrilldown('${drillId}')">
+                             <td><strong>${mgr.name} ▾</strong></td><td>${mgr.attended}</td><td>${mgr.base}</td><td><strong>${mPct}%</strong></td>
+                           </tr>`;
+                  
+                  if(mgr.agents && mgr.agents.length > 0) {
+                      let inner = `<table class="inner-table"><tr><th>Agent</th><th>In</th><th>Out</th></tr>`;
+                      mgr.agents.forEach(a => {
+                          let statusTag = a.checkOut ? '' : '<span style="color:var(--warning); font-size:0.7rem; font-weight:bold;"> (Pending Checkout)</span>';
+                          inner += `<tr><td>${a.name} <span style="color:#a0aec0;font-size:0.7rem;">(${a.imd})</span><br>${statusTag}</td>
+                                    <td style="color:var(--success)">${format12Hour(a.checkIn)}</td>
+                                    <td style="color:var(--danger)">${a.checkOut ? format12Hour(a.checkOut) : '--:--'}</td></tr>`;
+                      });
+                      inner += `</table>`;
+                      card += `<tr id="${drillId}" class="drilldown-row"><td colspan="4">${inner}</td></tr>`;
+                  }
+              });
+          } else {
+              card += `<tr><td colspan="4">No attendances yet.</td></tr>`;
+          }
+          
+          card += `</tbody></table></div></div>`;
+          html += card;
+      });
+      container.innerHTML = html;
+  }
+
+  function toggleDrilldown(id) {
+      const el = document.getElementById(id);
+      if(el) el.classList.toggle('active');
+  }
+
+  function fetchLiveReport() {
+      document.getElementById('liveReportContainer').innerHTML = 'Loading live reports...';
+      callBackend('getLiveManagerReport', {}, (data) => { buildMultiMeetingReports(data, 'liveReportContainer'); });
+  }
+
+  function fetchHistoryReport() {
+      const date = document.getElementById('historyDate').value;
+      if(!date) return showToast("Select a date", "error");
+      document.getElementById('historyReportContainer').innerHTML = 'Fetching reports...';
+      callBackend('getHistoricalReport', {date: date}, (data) => { buildMultiMeetingReports(data, 'historyReportContainer'); });
+  }
+</script>
+</body>
+</html>
